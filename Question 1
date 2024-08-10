@@ -1,0 +1,78 @@
+from collections import defaultdict, deque
+
+class Task:
+    def __init__(self, name, duration):
+        self.name = name
+        self.duration = duration
+        self.dependencies = []
+        self.est = 0  # Earliest Start Time
+        self.eft = 0  # Earliest Finish Time
+        self.lst = float('inf')  # Latest Start Time
+        self.lft = float('inf')  # Latest Finish Time
+
+def calculate_critical_path(tasks):
+    # Calculate Earliest Start Times (EST) and Earliest Finish Times (EFT)
+    for task in tasks.values():
+        if not task.dependencies:
+            task.est = 0
+            task.eft = task.duration
+        else:
+            max_eft = 0
+            for dependency in task.dependencies:
+                max_eft = max(max_eft, tasks[dependency].eft)
+            task.est = max_eft
+            task.eft = task.est + task.duration
+
+    # Calculate Latest Finish Times (LFT) and Latest Start Times (LST)
+    max_duration = max(task.eft for task in tasks.values())
+    for task in reversed(list(tasks.values())):
+        if not any(dependency in task.name for dependency in task.dependencies):
+            task.lft = max_duration
+            task.lst = task.lft - task.duration
+        else:
+            min_lst = float('inf')
+            for dep_task_name, dep_task in tasks.items():
+                if task.name in dep_task.dependencies:
+                    min_lst = min(min_lst, dep_task.lst)
+            task.lft = min_lst
+            task.lst = task.lft - task.duration
+
+    # Identify Critical Path
+    critical_path = []
+    for task in tasks.values():
+        if task.est == task.lst:
+            critical_path.append(task.name)
+
+    # Earliest and Latest Completion Times
+    earliest_completion_time = max(task.eft for task in tasks.values())
+    latest_completion_time = max(task.lft for task in tasks.values())
+
+    return critical_path, earliest_completion_time, latest_completion_time
+
+def main():
+    # Define tasks
+    tasks = {
+        'T1': Task('T1', 3),
+        'T2': Task('T2', 2),
+        'T3': Task('T3', 1),
+        'T4': Task('T4', 4),
+        'T5': Task('T5', 2),
+    }
+
+    # Define dependencies (example)
+    tasks['T2'].dependencies.append('T1')
+    tasks['T3'].dependencies.append('T2')
+    tasks['T4'].dependencies.append('T1')
+    tasks['T5'].dependencies.append('T3')
+    tasks['T5'].dependencies.append('T4')
+
+    # Calculate the critical path and completion times
+    critical_path, earliest_completion_time, latest_completion_time = calculate_critical_path(tasks)
+
+    # Output the results
+    print(f"Earliest Completion Time: {earliest_completion_time}")
+    print(f"Latest Completion Time: {latest_completion_time}")
+    print(f"Critical Path: {' -> '.join(critical_path)}")
+
+if __name__ == "__main__":
+    main()
